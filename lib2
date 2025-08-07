@@ -59,44 +59,6 @@ local function GetGui()
 		or (cloneref and cloneref(MacLib.GetService("CoreGui")) or MacLib.GetService("CoreGui"))
 
 	newGui.Parent = parent
-
-	-- Toggle GUI visibility with key
-	local guiVisible = true
-	local toggleKey = Enum.KeyCode.RightControl -- Default toggle key
-
-	UserInputService.InputBegan:Connect(function(input, gameProcessed)
-		if not gameProcessed and input.KeyCode == toggleKey then
-			macLib.Enabled = not macLib.Enabled
-		end
-	end)
-
-	-- Add Keybind Setting to change toggle key dynamically
-	local function CreateKeybindSetting()
-		local settingButton = Instance.new("TextButton")
-		settingButton.Size = UDim2.fromOffset(200, 30)
-		settingButton.Position = UDim2.fromOffset(20, 60)
-		settingButton.BackgroundTransparency = 1
-		settingButton.Text = "Toggle UI: [" .. toggleKey.Name .. "]"
-		settingButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-		settingButton.Font = Enum.Font.SourceSans
-		settingButton.TextSize = 14
-		settingButton.Parent = macLib
-
-		settingButton.MouseButton1Click:Connect(function()
-			settingButton.Text = "Press a key..."
-			local conn
-			conn = UserInputService.InputBegan:Connect(function(input)
-				if input.UserInputType == Enum.UserInputType.Keyboard then
-					toggleKey = input.KeyCode
-					settingButton.Text = "Toggle UI: [" .. toggleKey.Name .. "]"
-					conn:Disconnect()
-				end
-			end)
-		end)
-	end
-
-	CreateKeybindSetting()
-
 	return newGui
 end
 
@@ -244,31 +206,6 @@ function MacLib:Window(Settings)
 	stroke.Transparency = windowControlSettings.strokeTransparency
 
 	
-	local function		local size = enabled and windowControlSettings.sizes.enabled or windowControlSettings.sizes.disabled
-		local transparency = enabled and windowControlSettings.transparencies.enabled or windowControlSettings.transparencies.disabled
-
-		button.Size = size
-		button.BackgroundTransparency = transparency
-		button.Active = enabled
-		button.Interactable = enabled
-
-		for _, child in ipairs(button:GetChildren()) do
-			if child:IsA("UIStroke") then
-				child.Transparency = transparency
-			end
-		end
-		if not enabled then
-			stroke:Clone().Parent = button
-		end
-	end
-	local controlsList = {exit, minimize}
-	for _, button in pairs(controlsList) do
-		local buttonName = button.Name
-		local isEnabled = true
-
-		if Settings.DisabledWindowControls and table.find(Settings.DisabledWindowControls, buttonName) then
-			isEnabled = false
-		end	end
 
 	controls.Parent = windowControls
 
