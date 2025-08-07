@@ -205,7 +205,36 @@ function MacLib:Window(Settings)
 	stroke.Color = Color3.fromRGB(255, 255, 255)
 	stroke.Transparency = windowControlSettings.strokeTransparency
 
-	
+	-- Assuming 'controls' is already defined somewhere above
+
+local exit = Instance.new("TextButton")
+exit.Name = "Exit"
+exit.Visible = false
+exit.Size = UDim2.new(0, 0, 0, 0)
+exit.Active = false
+exit.AutoButtonColor = false
+exit.Parent = controls
+
+local minimize = Instance.new("TextButton")
+minimize.Name = "Minimize"
+minimize.Visible = false
+minimize.Size = UDim2.new(0, 0, 0, 0)
+minimize.Active = false
+minimize.AutoButtonColor = false
+minimize.Parent = controls
+
+local maximize = Instance.new("TextButton")
+maximize.Name = "Maximize"
+maximize.Visible = false
+maximize.Size = UDim2.new(0, 0, 0, 0)
+maximize.Active = false
+maximize.AutoButtonColor = false
+maximize.Parent = controls
+
+local function applyState(button, enabled)
+    -- your function body
+end
+
 
 	controls.Parent = windowControls
 
