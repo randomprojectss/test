@@ -1237,6 +1237,8 @@
 
 -- [ ... your variables, helpers, and theme definitions unchanged ... ]
 
+-- [ ... your variables, helpers, themes, and utility functions are unchanged ... ]
+
 function library:window(properties)
     local window = {opened = true}
     local opened = {}
@@ -1253,7 +1255,7 @@ function library:window(properties)
         Name = ""
     })
 
-    -- main window
+    -- MAIN WINDOW
     local main_panel = library:panel({
         name = properties and properties.name or "Atlanta | ",
         size = dim2(0, 604, 0, 628),
@@ -1261,7 +1263,7 @@ function library:window(properties)
         image = "rbxassetid://98823308062942",
     })
 
-    -- STYLE PANEL (with dock button, content below)
+    -- STYLE PANEL (DOCKED)
     local style_panel = library:panel({
         name = "Style",
         anchor_point = vec2(0, 0),
@@ -1270,7 +1272,7 @@ function library:window(properties)
         image = "rbxassetid://115194686863276",
     })
 
-    -- CONFIG PANEL (with dock button, content below)
+    -- CONFIG PANEL (DOCKED)
     local config_panel = library:panel({
         name = "Configurations",
         size = dim2(0, 324, 0, 410),
@@ -1278,7 +1280,7 @@ function library:window(properties)
         image = "rbxassetid://105199726008012",
     })
 
-    -- Dock logic: move style/config when main is dragged
+    -- VISUAL DOCKING
     local function updateDockedPanels()
         if style_panel.items.sgui.Enabled then
             style_panel.items.main_holder.Position =
@@ -1327,21 +1329,14 @@ function library:window(properties)
         end
     end
 
-    -- MAIN PANEL CONTENT (fill this as you wish!)
-    -- Example: Add tabs and controls to your main panel
+    -- MAIN PANEL CONTENT (FILL IN YOUR TABS/SECTIONS AS DESIRED!)
     local main_column = setmetatable(main_panel.items, library):column()
     local tab1 = main_panel:tab({name = "Aimbot"})
     local section1 = tab1:section({name = "General"})
     section1:toggle({name = "Enable Aimbot", flag = "aimbot_enabled"})
     section1:slider({name = "FOV", flag = "aimbot_fov", min = 1, max = 360, default = 90})
 
-    -- Add more tabs/sections as you need, e.g.:
-    local tab2 = main_panel:tab({name = "Visuals"})
-    local section2 = tab2:section({name = "ESP"})
-    section2:toggle({name = "Box ESP", flag = "box_esp"})
-    section2:colorpicker({name = "Box Color", flag = "box_color", color = Color3.fromRGB(0,255,0)})
-
-    -- STYLE PANEL CONTENT (already works, example below)
+    -- STYLE PANEL CONTENT (ORIGINAL, WORKING LOGIC)
     local watermark = library:watermark({default = os.date('Atlanta |  - %b %d %Y - %H:%M:%S')})
     task.spawn(function()
         while task.wait(1) do
@@ -1355,9 +1350,81 @@ function library:window(properties)
     :colorpicker({name = "Accent", color = themes.preset.accent, flag = "accent", callback = function(color, alpha)
         library:update_theme("accent", color)
     end, flag = "Accent"})
-    -- ... (rest of style controls, as in your working code) ...
+    style_section:label({name = "Contrast"})
+    :colorpicker({name = "Low", color = themes.preset.low_contrast, flag = "low_contrast", callback = function(color)
+        if (flags["high_contrast"] and flags["low_contrast"]) then
+            library:update_theme("contrast", rgbseq{
+                rgbkey(0, flags["low_contrast"].Color),
+                rgbkey(1, flags["high_contrast"].Color)
+            })
+        end
+        library:update_theme("low_contrast", flags["low_contrast"].Color)
+    end})
+    :colorpicker({name = "High", color = themes.preset.high_contrast, flag = "high_contrast", callback = function(color)
+        library:update_theme("contrast", rgbseq{
+            rgbkey(0, flags["low_contrast"].Color),
+            rgbkey(1, flags["high_contrast"].Color)
+        })
+        library:update_theme("high_contrast", flags["high_contrast"].Color)
+    end})
+    style_section:label({name = "Inline"})
+    :colorpicker({name = "Inline", color = themes.preset.inline, callback = function(color, alpha)
+        library:update_theme("inline", color)
+    end, flag = "Inline"})
+    style_section:label({name = "Outline"})
+    :colorpicker({name = "Outline", color = themes.preset.outline, callback = function(color, alpha)
+        library:update_theme("outline", color)
+    end, flag = "Outline"})
+    style_section:label({name = "Text Color"})
+    :colorpicker({name = "Main", color = themes.preset.text, callback = function(color, alpha)
+        library:update_theme("text", color)
+    end, flag = "Main"})
+    :colorpicker({name = "Outline", color = themes.preset.text_outline, callback = function(color, alpha)
+        library:update_theme("text_outline", color)
+    end, flag = "Outline"})
+    style_section:label({name = "Glow"})
+    :colorpicker({name = "Glow", color = themes.preset.glow, callback = function(color, alpha)
+        library:update_theme("glow", color)
+    end, flag = "Glow"})
+    style_section:slider({name = "Blur Size", flag = "Blur Size", min = 0, max = 56, default = 15, interval = 1, callback = function(int)
+        if window.opened then blur.Size = int end
+    end})
+    local other_section = style_column:section({name = "Other"})
+    other_section:label({name = "UI Bind"})
+    :keybind({callback = window.set_menu_visibility, key = Enum.KeyCode.Insert})
+    other_section:toggle({name = "Keybind List", flag = "keybind_list", callback = function(bool)
+        library.keybind_list_frame.Visible = bool
+    end})
+    other_section:toggle({name = "Watermark", flag = "watermark", callback = function(bool)
+        watermark.set_visible(bool)
+    end})
+    other_section:button_holder({})
+    other_section:button({name = "Copy JobId", callback = function()
+        setclipboard(game.JobId)
+    end})
+    other_section:button_holder({})
+    other_section:button({name = "Copy GameID", callback = function()
+        setclipboard(game.GameId)
+    end})
+    other_section:button_holder({})
+    other_section:button({name = "Copy Join Script", callback = function()
+        setclipboard('game:GetService("TeleportService"):TeleportToPlaceInstance(' .. game.PlaceId .. ', "' .. game.JobId .. '", game.Players.LocalPlayer)')
+    end})
+    other_section:button_holder({})
+    other_section:button({name = "Rejoin", callback = function()
+        game:GetService("TeleportService"):TeleportToPlaceInstance(game.PlaceId, game.JobId, lp)
+    end})
+    other_section:button_holder({})
+    other_section:button({name = "Join New Server", callback = function()
+        local apiRequest = game:GetService("HttpService"):JSONDecode(game:HttpGetAsync("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"))
+        local data = apiRequest.data[random(1, #apiRequest.data)]
+        if data.playing <= flags["max_players"] then
+            game:GetService("TeleportService"):TeleportToPlaceInstance(game.PlaceId, data.id)
+        end
+    end})
+    other_section:slider({name = "Max Players", flag = "max_players", min = 0, max = 40, default = 15, interval = 1})
 
-    -- CONFIG PANEL CONTENT (restored, like your original!)
+    -- CONFIG PANEL CONTENT (WORKING LOGIC)
     local config_items = config_panel.items
     local config_column = setmetatable(config_items, library):column()
     local config_section = config_column:section({name = "Options"})
@@ -1397,11 +1464,11 @@ function library:window(properties)
         blur:Destroy()
     end})
 
-    -- Return the window object
     return setmetatable(window, library)
 end
 
 -- [ ... rest of your library code unchanged ... ]
+
 		function library:watermark(options) 
 			local cfg = {
 				default = options.text or options.default or os.date('drain.lol | %b %d %Y | %H:%M')
