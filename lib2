@@ -1237,7 +1237,7 @@
 
 -- [ ... your variables, helpers, and theme definitions unchanged ... ]
 
--- [ ... your variables, helpers, themes, and utility functions are unchanged ... ]
+-- Assuming library, lighting, camera, themes, flags, etc. are already defined
 
 function library:window(properties)
     local window = {opened = true}
@@ -1255,7 +1255,7 @@ function library:window(properties)
         Name = ""
     })
 
-    -- MAIN WINDOW
+    -- MAIN PANEL
     local main_panel = library:panel({
         name = properties and properties.name or "Atlanta | ",
         size = dim2(0, 604, 0, 628),
@@ -1263,7 +1263,7 @@ function library:window(properties)
         image = "rbxassetid://98823308062942",
     })
 
-    -- STYLE PANEL (DOCKED)
+    -- STYLE PANEL
     local style_panel = library:panel({
         name = "Style",
         anchor_point = vec2(0, 0),
@@ -1272,7 +1272,7 @@ function library:window(properties)
         image = "rbxassetid://115194686863276",
     })
 
-    -- CONFIG PANEL (DOCKED)
+    -- CONFIG PANEL
     local config_panel = library:panel({
         name = "Configurations",
         size = dim2(0, 324, 0, 410),
@@ -1280,18 +1280,13 @@ function library:window(properties)
         image = "rbxassetid://105199726008012",
     })
 
-    -- VISUAL DOCKING
+    -- Dock Update Logic
     local function updateDockedPanels()
         if style_panel.items.sgui.Enabled then
-            style_panel.items.main_holder.Position =
-                dim2(0, main_panel.items.main_holder.AbsolutePosition.X + main_panel.items.main_holder.AbsoluteSize.X + 10,
-                     0, main_panel.items.main_holder.AbsolutePosition.Y)
+            style_panel.items.main_holder.Position = dim2(0, main_panel.items.main_holder.AbsolutePosition.X + main_panel.items.main_holder.AbsoluteSize.X + 10, 0, main_panel.items.main_holder.AbsolutePosition.Y)
         end
         if config_panel.items.sgui.Enabled then
-            config_panel.items.main_holder.Position =
-                dim2(0,
-                     main_panel.items.main_holder.AbsolutePosition.X + main_panel.items.main_holder.AbsoluteSize.X + style_panel.items.main_holder.Size.X.Offset + 20,
-                     0, main_panel.items.main_holder.AbsolutePosition.Y)
+            config_panel.items.main_holder.Position = dim2(0, main_panel.items.main_holder.AbsolutePosition.X + main_panel.items.main_holder.AbsoluteSize.X + style_panel.items.main_holder.Size.X.Offset + 20, 0, main_panel.items.main_holder.AbsolutePosition.Y)
         end
     end
     main_panel.items.main_holder:GetPropertyChangedSignal("Position"):Connect(updateDockedPanels)
@@ -1299,14 +1294,14 @@ function library:window(properties)
     style_panel.items.sgui:GetPropertyChangedSignal("Enabled"):Connect(updateDockedPanels)
     config_panel.items.sgui:GetPropertyChangedSignal("Enabled"):Connect(updateDockedPanels)
 
-    -- Insert-key toggle logic (make sure all windows toggle)
+    -- Insert-key toggle logic
     function window.set_menu_visibility(bool)
         window.opened = bool
         if bool then
-            for _,gui in opened do gui.Enabled = true end
+            for _, gui in opened do gui.Enabled = true end
             opened = {}
         else
-            for _,gui in library.guis do
+            for _, gui in library.guis do
                 if gui.Enabled then
                     gui.Enabled = false
                     table.insert(opened, gui)
@@ -1316,12 +1311,12 @@ function library:window(properties)
         style_panel.items.sgui.Enabled = bool
         config_panel.items.sgui.Enabled = bool
         library:tween(blur, {Size = bool and (flags["Blur Size"] or 15) or 0})
-        dock_outline.Visible = bool
+        if dock_outline then dock_outline.Visible = bool end
         sgui.Enabled = true
         notif_holder.Enabled = true
         tooltip_sgui.Enabled = true
         library.cache.Enabled = false
-        for _,tooltip in tooltip_sgui:GetChildren() do tooltip.Visible = false end
+        for _, tooltip in tooltip_sgui:GetChildren() do tooltip.Visible = false end
         if library.current_element_open then
             library.current_element_open.set_visible(false)
             library.current_element_open.open = false
@@ -1329,69 +1324,79 @@ function library:window(properties)
         end
     end
 
-    -- MAIN PANEL CONTENT (FILL IN YOUR TABS/SECTIONS AS DESIRED!)
+    -- MAIN CONTENT
     local main_column = setmetatable(main_panel.items, library):column()
     local tab1 = main_panel:tab({name = "Aimbot"})
     local section1 = tab1:section({name = "General"})
     section1:toggle({name = "Enable Aimbot", flag = "aimbot_enabled"})
     section1:slider({name = "FOV", flag = "aimbot_fov", min = 1, max = 360, default = 90})
 
-    -- STYLE PANEL CONTENT (ORIGINAL, WORKING LOGIC)
+    -- STYLE CONTENT
     local watermark = library:watermark({default = os.date('Atlanta |  - %b %d %Y - %H:%M:%S')})
     task.spawn(function()
         while task.wait(1) do
             watermark.change_text(os.date('Atlanta - Beta - %b %d %Y - %H:%M:%S'))
         end
     end)
-    local items_style = style_panel.items
-    local style_column = setmetatable(items_style, library):column()
+    local style_column = setmetatable(style_panel.items, library):column()
     local style_section = style_column:section({name = "Theme"})
-    style_section:label({name = "Accent"})
-    :colorpicker({name = "Accent", color = themes.preset.accent, flag = "accent", callback = function(color, alpha)
-        library:update_theme("accent", color)
-    end, flag = "Accent"})
+    style_section:label({name = "Accent"}):colorpicker({
+        name = "Accent", color = themes.preset.accent, flag = "accent",
+        callback = function(color) library:update_theme("accent", color) end
+    })
     style_section:label({name = "Contrast"})
-    :colorpicker({name = "Low", color = themes.preset.low_contrast, flag = "low_contrast", callback = function(color)
-        if (flags["high_contrast"] and flags["low_contrast"]) then
-            library:update_theme("contrast", rgbseq{
-                rgbkey(0, flags["low_contrast"].Color),
-                rgbkey(1, flags["high_contrast"].Color)
-            })
-        end
-        library:update_theme("low_contrast", flags["low_contrast"].Color)
-    end})
-    :colorpicker({name = "High", color = themes.preset.high_contrast, flag = "high_contrast", callback = function(color)
-        library:update_theme("contrast", rgbseq{
-            rgbkey(0, flags["low_contrast"].Color),
-            rgbkey(1, flags["high_contrast"].Color)
+        :colorpicker({
+            name = "Low", color = themes.preset.low_contrast, flag = "low_contrast",
+            callback = function() 
+                if flags["high_contrast"] then
+                    library:update_theme("contrast", rgbseq{
+                        rgbkey(0, flags["low_contrast"].Color),
+                        rgbkey(1, flags["high_contrast"].Color)
+                    })
+                end
+                library:update_theme("low_contrast", flags["low_contrast"].Color)
+            end
         })
-        library:update_theme("high_contrast", flags["high_contrast"].Color)
-    end})
-    style_section:label({name = "Inline"})
-    :colorpicker({name = "Inline", color = themes.preset.inline, callback = function(color, alpha)
-        library:update_theme("inline", color)
-    end, flag = "Inline"})
-    style_section:label({name = "Outline"})
-    :colorpicker({name = "Outline", color = themes.preset.outline, callback = function(color, alpha)
-        library:update_theme("outline", color)
-    end, flag = "Outline"})
+        :colorpicker({
+            name = "High", color = themes.preset.high_contrast, flag = "high_contrast",
+            callback = function()
+                library:update_theme("contrast", rgbseq{
+                    rgbkey(0, flags["low_contrast"].Color),
+                    rgbkey(1, flags["high_contrast"].Color)
+                })
+                library:update_theme("high_contrast", flags["high_contrast"].Color)
+            end
+        })
+    style_section:label({name = "Inline"}):colorpicker({
+        name = "Inline", color = themes.preset.inline, flag = "Inline",
+        callback = function(color) library:update_theme("inline", color) end
+    })
+    style_section:label({name = "Outline"}):colorpicker({
+        name = "Outline", color = themes.preset.outline, flag = "Outline",
+        callback = function(color) library:update_theme("outline", color) end
+    })
     style_section:label({name = "Text Color"})
-    :colorpicker({name = "Main", color = themes.preset.text, callback = function(color, alpha)
-        library:update_theme("text", color)
-    end, flag = "Main"})
-    :colorpicker({name = "Outline", color = themes.preset.text_outline, callback = function(color, alpha)
-        library:update_theme("text_outline", color)
-    end, flag = "Outline"})
-    style_section:label({name = "Glow"})
-    :colorpicker({name = "Glow", color = themes.preset.glow, callback = function(color, alpha)
-        library:update_theme("glow", color)
-    end, flag = "Glow"})
-    style_section:slider({name = "Blur Size", flag = "Blur Size", min = 0, max = 56, default = 15, interval = 1, callback = function(int)
-        if window.opened then blur.Size = int end
-    end})
+        :colorpicker({
+            name = "Main", color = themes.preset.text, flag = "Main",
+            callback = function(color) library:update_theme("text", color) end
+        })
+        :colorpicker({
+            name = "Outline", color = themes.preset.text_outline, flag = "Outline",
+            callback = function(color) library:update_theme("text_outline", color) end
+        })
+    style_section:label({name = "Glow"}):colorpicker({
+        name = "Glow", color = themes.preset.glow, flag = "Glow",
+        callback = function(color) library:update_theme("glow", color) end
+    })
+    style_section:slider({name = "Blur Size", flag = "Blur Size", min = 0, max = 56, default = 15, interval = 1,
+        callback = function(int)
+            if window.opened then blur.Size = int end
+        end
+    })
     local other_section = style_column:section({name = "Other"})
-    other_section:label({name = "UI Bind"})
-    :keybind({callback = window.set_menu_visibility, key = Enum.KeyCode.Insert})
+    other_section:label({name = "UI Bind"}):keybind({
+        callback = window.set_menu_visibility, key = Enum.KeyCode.Insert
+    })
     other_section:toggle({name = "Keybind List", flag = "keybind_list", callback = function(bool)
         library.keybind_list_frame.Visible = bool
     end})
@@ -1399,34 +1404,18 @@ function library:window(properties)
         watermark.set_visible(bool)
     end})
     other_section:button_holder({})
-    other_section:button({name = "Copy JobId", callback = function()
-        setclipboard(game.JobId)
-    end})
-    other_section:button_holder({})
-    other_section:button({name = "Copy GameID", callback = function()
-        setclipboard(game.GameId)
-    end})
-    other_section:button_holder({})
+    other_section:button({name = "Copy JobId", callback = function() setclipboard(game.JobId) end})
+    other_section:button({name = "Copy GameID", callback = function() setclipboard(game.GameId) end})
     other_section:button({name = "Copy Join Script", callback = function()
         setclipboard('game:GetService("TeleportService"):TeleportToPlaceInstance(' .. game.PlaceId .. ', "' .. game.JobId .. '", game.Players.LocalPlayer)')
     end})
-    other_section:button_holder({})
     other_section:button({name = "Rejoin", callback = function()
         game:GetService("TeleportService"):TeleportToPlaceInstance(game.PlaceId, game.JobId, lp)
     end})
-    other_section:button_holder({})
-    other_section:button({name = "Join New Server", callback = function()
-        local apiRequest = game:GetService("HttpService"):JSONDecode(game:HttpGetAsync("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"))
-        local data = apiRequest.data[random(1, #apiRequest.data)]
-        if data.playing <= flags["max_players"] then
-            game:GetService("TeleportService"):TeleportToPlaceInstance(game.PlaceId, data.id)
-        end
-    end})
-    other_section:slider({name = "Max Players", flag = "max_players", min = 0, max = 40, default = 15, interval = 1})
+    other_section:slider({name = "Max Players", flag = "max_players", min = 0, max = 40, default = 15})
 
-    -- CONFIG PANEL CONTENT (WORKING LOGIC)
-    local config_items = config_panel.items
-    local config_column = setmetatable(config_items, library):column()
+    -- CONFIG CONTENT
+    local config_column = setmetatable(config_panel.items, library):column()
     local config_section = config_column:section({name = "Options"})
     config_holder = config_section:list({flag = "config_name_list"})
     config_section:textbox({flag = "config_name_text_box"})
@@ -1439,7 +1428,6 @@ function library:window(properties)
         delfile(library.directory .. "/configs/" .. flags["config_name_list"] .. ".cfg")
         library:config_list_update()
     end})
-    config_section:button_holder({})
     config_section:button({name = "Load", callback = function()
         library:load_config(readfile(library.directory .. "/configs/" .. flags["config_name_list"] .. ".cfg"))
         library:notification({text = "Loaded Config: " .. flags["config_name_list"], time = 3})
@@ -1449,11 +1437,9 @@ function library:window(properties)
         library:config_list_update()
         library:notification({text = "Saved Config: " .. flags["config_name_list"], time = 3})
     end})
-    config_section:button_holder({})
     config_section:button({name = "Refresh Configs", callback = function()
         library:config_list_update()
     end})
-    config_section:button_holder({})
     config_section:button({name = "Unload Config", callback = function()
         library:load_config(library.old_config)
     end})
@@ -1466,8 +1452,6 @@ function library:window(properties)
 
     return setmetatable(window, library)
 end
-
--- [ ... rest of your library code unchanged ... ]
 
 		function library:watermark(options) 
 			local cfg = {
