@@ -244,8 +244,7 @@ function MacLib:Window(Settings)
 	stroke.Transparency = windowControlSettings.strokeTransparency
 
 	
-	local function applyState(button, enabled)
-		local size = enabled and windowControlSettings.sizes.enabled or windowControlSettings.sizes.disabled
+	local function		local size = enabled and windowControlSettings.sizes.enabled or windowControlSettings.sizes.disabled
 		local transparency = enabled and windowControlSettings.transparencies.enabled or windowControlSettings.transparencies.disabled
 
 		button.Size = size
@@ -262,9 +261,6 @@ function MacLib:Window(Settings)
 			stroke:Clone().Parent = button
 		end
 	end
-
-	applyState(maximize, false)
-
 	local controlsList = {exit, minimize}
 	for _, button in pairs(controlsList) do
 		local buttonName = button.Name
@@ -272,10 +268,7 @@ function MacLib:Window(Settings)
 
 		if Settings.DisabledWindowControls and table.find(Settings.DisabledWindowControls, buttonName) then
 			isEnabled = false
-		end
-
-		applyState(button, isEnabled)
-	end
+		end	end
 
 	controls.Parent = windowControls
 
