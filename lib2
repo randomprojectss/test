@@ -1240,218 +1240,104 @@
 -- Assuming library, lighting, camera, themes, flags, etc. are already defined
 
 function library:window(properties)
-    local window = {opened = true}
+    local window = { opened = true }
     local opened = {}
-    local dock_outline
+
+    -- Blur effect
     local blur = library:create("BlurEffect", {
-        Parent = lighting;
-        Enabled = true;
+        Parent = lighting,
+        Enabled = true,
         Size = 15
     })
 
-    library.cache = library:create("ScreenGui", {
-        Enabled = false,
+    -- Global screen GUI
+    local sgui = library:create("ScreenGui", {
+        Enabled = true,
         Parent = gethui(),
-        Name = ""
+        Name = "MainGui"
     })
+    library.cache = sgui
 
-    -- MAIN PANEL
+    -- Main panel
     local main_panel = library:panel({
         name = properties and properties.name or "Atlanta | ",
         size = dim2(0, 604, 0, 628),
         position = dim2(0, (camera.ViewportSize.X / 2) - 302 - 96, 0, (camera.ViewportSize.Y / 2) - 421 - 12),
         image = "rbxassetid://98823308062942",
     })
+    main_panel.items.sgui = sgui -- Make sure it's visible and toggleable
+    local items = main_panel.items
 
-    -- STYLE PANEL
+    -- Style panel
     local style_panel = library:panel({
         name = "Style",
         anchor_point = vec2(0, 0),
         size = dim2(0, 394, 0, 464),
-        position = dim2(0, main_panel.items.main_holder.AbsolutePosition.X + main_panel.items.main_holder.AbsoluteSize.X + 10, 0, main_panel.items.main_holder.AbsolutePosition.Y),
+        position = dim2(0, items.main_holder.AbsolutePosition.X + items.main_holder.AbsoluteSize.X + 10, 0, items.main_holder.AbsolutePosition.Y),
         image = "rbxassetid://115194686863276",
     })
+    style_panel.items.sgui = sgui
 
-    -- CONFIG PANEL
+    -- Config panel
     local config_panel = library:panel({
         name = "Configurations",
         size = dim2(0, 324, 0, 410),
-        position = dim2(0, main_panel.items.main_holder.AbsolutePosition.X + main_panel.items.main_holder.AbsoluteSize.X + style_panel.items.main_holder.Size.X.Offset + 20, 0, main_panel.items.main_holder.AbsolutePosition.Y),
+        position = dim2(0, style_panel.items.main_holder.AbsolutePosition.X + style_panel.items.main_holder.AbsoluteSize.X + 10, 0, style_panel.items.main_holder.AbsolutePosition.Y),
         image = "rbxassetid://105199726008012",
     })
+    config_panel.items.sgui = sgui
 
-    -- Dock Update Logic
+    -- Update docking
     local function updateDockedPanels()
-        if style_panel.items.sgui.Enabled then
-            style_panel.items.main_holder.Position = dim2(0, main_panel.items.main_holder.AbsolutePosition.X + main_panel.items.main_holder.AbsoluteSize.X + 10, 0, main_panel.items.main_holder.AbsolutePosition.Y)
-        end
-        if config_panel.items.sgui.Enabled then
-            config_panel.items.main_holder.Position = dim2(0, main_panel.items.main_holder.AbsolutePosition.X + main_panel.items.main_holder.AbsoluteSize.X + style_panel.items.main_holder.Size.X.Offset + 20, 0, main_panel.items.main_holder.AbsolutePosition.Y)
-        end
-    end
-    main_panel.items.main_holder:GetPropertyChangedSignal("Position"):Connect(updateDockedPanels)
-    main_panel.items.main_holder:GetPropertyChangedSignal("Size"):Connect(updateDockedPanels)
-    style_panel.items.sgui:GetPropertyChangedSignal("Enabled"):Connect(updateDockedPanels)
-    config_panel.items.sgui:GetPropertyChangedSignal("Enabled"):Connect(updateDockedPanels)
-
-    -- Insert-key toggle logic
-    function window.set_menu_visibility(bool)
-        window.opened = bool
-        if bool then
-            for _, gui in opened do gui.Enabled = true end
-            opened = {}
-        else
-            for _, gui in library.guis do
-                if gui.Enabled then
-                    gui.Enabled = false
-                    table.insert(opened, gui)
-                end
-            end
-        end
-        style_panel.items.sgui.Enabled = bool
-        config_panel.items.sgui.Enabled = bool
-        library:tween(blur, {Size = bool and (flags["Blur Size"] or 15) or 0})
-        if dock_outline then dock_outline.Visible = bool end
-        sgui.Enabled = true
-        notif_holder.Enabled = true
-        tooltip_sgui.Enabled = true
-        library.cache.Enabled = false
-        for _, tooltip in tooltip_sgui:GetChildren() do tooltip.Visible = false end
-        if library.current_element_open then
-            library.current_element_open.set_visible(false)
-            library.current_element_open.open = false
-            library.current_element_open = nil
-        end
+        style_panel.items.main_holder.Position = dim2(0, items.main_holder.AbsolutePosition.X + items.main_holder.AbsoluteSize.X + 10, 0, items.main_holder.AbsolutePosition.Y)
+        config_panel.items.main_holder.Position = dim2(0, style_panel.items.main_holder.AbsolutePosition.X + style_panel.items.main_holder.AbsoluteSize.X + 10, 0, style_panel.items.main_holder.AbsolutePosition.Y)
     end
 
-    -- MAIN CONTENT
-    local main_column = setmetatable(main_panel.items, library):column()
-    local tab1 = main_panel:tab({name = "Aimbot"})
-    local section1 = tab1:section({name = "General"})
-    section1:toggle({name = "Enable Aimbot", flag = "aimbot_enabled"})
-    section1:slider({name = "FOV", flag = "aimbot_fov", min = 1, max = 360, default = 90})
+    items.main_holder:GetPropertyChangedSignal("Position"):Connect(updateDockedPanels)
+    items.main_holder:GetPropertyChangedSignal("Size"):Connect(updateDockedPanels)
 
-    -- STYLE CONTENT
-    local watermark = library:watermark({default = os.date('Atlanta |  - %b %d %Y - %H:%M:%S')})
-    task.spawn(function()
-        while task.wait(1) do
-            watermark.change_text(os.date('Atlanta - Beta - %b %d %Y - %H:%M:%S'))
+    -- Insert toggles everything
+    function window.set_menu_visibility(visible)
+        window.opened = visible
+        for _, gui in library.guis do
+            gui.Enabled = visible
         end
-    end)
-    local style_column = setmetatable(style_panel.items, library):column()
-    local style_section = style_column:section({name = "Theme"})
-    style_section:label({name = "Accent"}):colorpicker({
-        name = "Accent", color = themes.preset.accent, flag = "accent",
-        callback = function(color) library:update_theme("accent", color) end
-    })
-    style_section:label({name = "Contrast"})
-        :colorpicker({
-            name = "Low", color = themes.preset.low_contrast, flag = "low_contrast",
-            callback = function() 
-                if flags["high_contrast"] then
-                    library:update_theme("contrast", rgbseq{
-                        rgbkey(0, flags["low_contrast"].Color),
-                        rgbkey(1, flags["high_contrast"].Color)
-                    })
-                end
-                library:update_theme("low_contrast", flags["low_contrast"].Color)
-            end
-        })
-        :colorpicker({
-            name = "High", color = themes.preset.high_contrast, flag = "high_contrast",
-            callback = function()
-                library:update_theme("contrast", rgbseq{
-                    rgbkey(0, flags["low_contrast"].Color),
-                    rgbkey(1, flags["high_contrast"].Color)
-                })
-                library:update_theme("high_contrast", flags["high_contrast"].Color)
-            end
-        })
-    style_section:label({name = "Inline"}):colorpicker({
-        name = "Inline", color = themes.preset.inline, flag = "Inline",
-        callback = function(color) library:update_theme("inline", color) end
-    })
-    style_section:label({name = "Outline"}):colorpicker({
-        name = "Outline", color = themes.preset.outline, flag = "Outline",
-        callback = function(color) library:update_theme("outline", color) end
-    })
-    style_section:label({name = "Text Color"})
-        :colorpicker({
-            name = "Main", color = themes.preset.text, flag = "Main",
-            callback = function(color) library:update_theme("text", color) end
-        })
-        :colorpicker({
-            name = "Outline", color = themes.preset.text_outline, flag = "Outline",
-            callback = function(color) library:update_theme("text_outline", color) end
-        })
-    style_section:label({name = "Glow"}):colorpicker({
-        name = "Glow", color = themes.preset.glow, flag = "Glow",
-        callback = function(color) library:update_theme("glow", color) end
-    })
-    style_section:slider({name = "Blur Size", flag = "Blur Size", min = 0, max = 56, default = 15, interval = 1,
-        callback = function(int)
-            if window.opened then blur.Size = int end
-        end
-    })
-    local other_section = style_column:section({name = "Other"})
-    other_section:label({name = "UI Bind"}):keybind({
-        callback = window.set_menu_visibility, key = Enum.KeyCode.Insert
-    })
-    other_section:toggle({name = "Keybind List", flag = "keybind_list", callback = function(bool)
-        library.keybind_list_frame.Visible = bool
-    end})
-    other_section:toggle({name = "Watermark", flag = "watermark", callback = function(bool)
-        watermark.set_visible(bool)
-    end})
-    other_section:button_holder({})
-    other_section:button({name = "Copy JobId", callback = function() setclipboard(game.JobId) end})
-    other_section:button({name = "Copy GameID", callback = function() setclipboard(game.GameId) end})
-    other_section:button({name = "Copy Join Script", callback = function()
-        setclipboard('game:GetService("TeleportService"):TeleportToPlaceInstance(' .. game.PlaceId .. ', "' .. game.JobId .. '", game.Players.LocalPlayer)')
-    end})
-    other_section:button({name = "Rejoin", callback = function()
-        game:GetService("TeleportService"):TeleportToPlaceInstance(game.PlaceId, game.JobId, lp)
-    end})
-    other_section:slider({name = "Max Players", flag = "max_players", min = 0, max = 40, default = 15})
+        sgui.Enabled = visible
+        blur.Size = visible and 15 or 0
+        style_panel.items.sgui.Enabled = visible
+        config_panel.items.sgui.Enabled = visible
+    end
 
-    -- CONFIG CONTENT
+    -- Initialize content in config panel (example column)
     local config_column = setmetatable(config_panel.items, library):column()
-    local config_section = config_column:section({name = "Options"})
-    config_holder = config_section:list({flag = "config_name_list"})
-    config_section:textbox({flag = "config_name_text_box"})
-    config_section:button_holder({})
-    config_section:button({name = "Create", callback = function()
-        writefile(library.directory .. "/configs/" .. flags["config_name_text_box"] .. ".cfg", library:get_config())
-        library:config_list_update()
-    end})
-    config_section:button({name = "Delete", callback = function()
-        delfile(library.directory .. "/configs/" .. flags["config_name_list"] .. ".cfg")
-        library:config_list_update()
-    end})
-    config_section:button({name = "Load", callback = function()
-        library:load_config(readfile(library.directory .. "/configs/" .. flags["config_name_list"] .. ".cfg"))
-        library:notification({text = "Loaded Config: " .. flags["config_name_list"], time = 3})
-    end})
-    config_section:button({name = "Save", callback = function()
-        writefile(library.directory .. "/configs/" .. flags["config_name_list"] .. ".cfg", library:get_config())
-        library:config_list_update()
-        library:notification({text = "Saved Config: " .. flags["config_name_list"], time = 3})
-    end})
-    config_section:button({name = "Refresh Configs", callback = function()
-        library:config_list_update()
-    end})
-    config_section:button({name = "Unload Config", callback = function()
-        library:load_config(library.old_config)
-    end})
-    config_section:button({name = "Unload Menu", callback = function()
-        library:load_config(library.old_config)
-        for _, gui in library.guis do gui:Destroy() end
-        for _, connection in library.connections do connection:Disconnect() end
-        blur:Destroy()
-    end})
+    config_column:add_label("Configurations Section Loaded!")
 
+    -- Initialize content in style panel (example column)
+    local style_column = setmetatable(style_panel.items, library):column()
+    style_column:add_label("Style Section Loaded!")
+
+    -- Main UI (example tab section)
+    local section_holder = library:create("Frame", {
+        Parent = items.holder,
+        Size = dim2(1, 0, 1, -22),
+        Position = dim2(0, 0, 0, 22),
+        BackgroundTransparency = 1
+    })
+    window.section_holder = section_holder
+
+    -- Final return
     return setmetatable(window, library)
 end
+
+-- Bind Insert key
+uis.InputBegan:Connect(function(input, gpe)
+    if not gpe and input.KeyCode == Enum.KeyCode.Insert then
+        if library.current_window then
+            library.current_window.set_menu_visibility(not library.current_window.opened)
+        end
+    end
+end)
+
 
 		function library:watermark(options) 
 			local cfg = {
