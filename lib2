@@ -1233,6 +1233,8 @@
 
 -- [ ... all your variables, themes, and helper functions remain unchanged ... ]
 
+-- [ ... variables, helpers, and theme definitions unchanged ... ]
+
 function library:window(properties)
     local window = {opened = true}
     local opened = {}
@@ -1252,128 +1254,55 @@ function library:window(properties)
     -- ... dock UI creation code remains unchanged ...
 
     -- main window
-    local main_window = library:panel({
+    local main_panel = library:panel({
         name = properties and properties.name or "Atlanta | ",
         size = dim2(0, 604, 0, 628),
         position = dim2(0, (camera.ViewportSize.X / 2) - 302 - 96, 0, (camera.ViewportSize.Y / 2) - 421 - 12),
         image = "rbxassetid://98823308062942",
     })
 
-    local items = main_window.items
-
-    window["tab_holder"] = library:create("Frame", {
-        Parent = items.holder,
-        Name = " ",
-        BackgroundTransparency = 1,
-        Size = dim2(1, 0, 0, 22),
-        BorderColor3 = rgb(0, 0, 0),
-        ZIndex = 5,
-        BorderSizePixel = 0,
-        BackgroundColor3 = rgb(255, 255, 255)
-    })
-
-    library:create("UIListLayout", {
-        Parent = window["tab_holder"],
-        FillDirection = Enum.FillDirection.Horizontal,
-        HorizontalFlex = Enum.UIFlexAlignment.Fill,
-        Padding = dim(0, 2),
-        SortOrder = Enum.SortOrder.LayoutOrder
-    })
-
-    local section_holder = library:create("Frame", {
-        Parent = items.holder,
-        Name = " ",
-        BackgroundTransparency = 1,
-        Position = dim2(0, -1, 0, 19),
-        BorderColor3 = rgb(0, 0, 0),
-        Size = dim2(1, 0, 1, -22),
-        BorderSizePixel = 0,
-        BackgroundColor3 = rgb(255, 255, 255)
-    })
-    window["section_holder"] = section_holder
-
-    local outline = library:create("Frame", {
-        Parent = section_holder,
-        Name = "\0",
-        Position = dim2(0, 1, 0, 1),
-        BorderColor3 = rgb(0, 0, 0),
-        Size = dim2(1, 0, 1, 2),
-        BorderSizePixel = 0,
-        BackgroundColor3 = themes.preset.outline
-    })
-
-    library:apply_theme(outline, "outline", "BackgroundColor3")
-
-    local inline = library:create("Frame", {
-        Parent = outline,
-        Name = "\0",
-        Position = dim2(0, 1, 0, 1),
-        BorderColor3 = rgb(0, 0, 0),
-        Size = dim2(1, -2, 1, -2),
-        BorderSizePixel = 0,
-        BackgroundColor3 = themes.preset.inline
-    })
-
-    library:apply_theme(inline, "inline", "BackgroundColor3")
-
-    local background = library:create("Frame", {
-        Parent = inline,
-        Name = "\0",
-        Position = dim2(0, 1, 0, 1),
-        BorderColor3 = rgb(0, 0, 0),
-        Size = dim2(1, -2, 1, -2),
-        BorderSizePixel = 0,
-        BackgroundColor3 = rgb(255, 255, 255)
-    })
-
-    library.section_holder = background
-
-    library:create("UIPadding", {
-        Parent = background,
-        PaddingTop = dim(0, 4),
-        PaddingBottom = dim(0, 4),
-        PaddingRight = dim(0, 4),
-        PaddingLeft = dim(0, 4)
-    })
-
-    local UIGradient = library:create("UIGradient", {
-        Parent = background,
-        Rotation = 90,
-        Color = rgbseq{
-            rgbkey(0, rgb(41, 41, 55)),
-            rgbkey(1, rgb(35, 35, 47))
-        }
-    })
-
-    library:apply_theme(UIGradient, "contrast", "Color")
-    library:make_resizable(items.main_holder)
-
-    -- Style panel (normal floating panel, not parented to main)
+    -- Style panel
     local style_panel = library:panel({
         name = "Style",
         anchor_point = vec2(0, 0),
         size = dim2(0, 394, 0, 464),
-        position = dim2(0, items.main_holder.AbsolutePosition.X + items.main_holder.AbsoluteSize.X + 10, 0, items.main_holder.AbsolutePosition.Y),
+        position = dim2(0, main_panel.items.main_holder.AbsolutePosition.X + main_panel.items.main_holder.AbsoluteSize.X + 10, 0, main_panel.items.main_holder.AbsolutePosition.Y),
         image = "rbxassetid://115194686863276",
     })
 
-    -- Config panel (normal floating panel, not parented to main)
+    -- Config panel
     local config_panel = library:panel({
         name = "Configurations",
         size = dim2(0, 324, 0, 410),
-        position = dim2(0, items.main_holder.AbsolutePosition.X + items.main_holder.AbsoluteSize.X + style_panel.items.main_holder.Size.X.Offset + 20, 0, items.main_holder.AbsolutePosition.Y),
+        position = dim2(0, main_panel.items.main_holder.AbsolutePosition.X + main_panel.items.main_holder.AbsoluteSize.X + style_panel.items.main_holder.Size.X.Offset + 20, 0, main_panel.items.main_holder.AbsolutePosition.Y),
         image = "rbxassetid://105199726008012",
     })
 
-    -- Keep style/config docked to main window by updating their positions
+    -- Function to move docked panels when main panel is moved
     local function updateDockedPanels()
-        style_panel.items.main_holder.Position = dim2(0, items.main_holder.AbsolutePosition.X + items.main_holder.AbsoluteSize.X + 10, 0, items.main_holder.AbsolutePosition.Y)
-        config_panel.items.main_holder.Position = dim2(0, items.main_holder.AbsolutePosition.X + items.main_holder.AbsoluteSize.X + style_panel.items.main_holder.Size.X.Offset + 20, 0, items.main_holder.AbsolutePosition.Y)
+        -- Only reposition if visible!
+        if style_panel.items.sgui.Enabled then
+            style_panel.items.main_holder.Position =
+                dim2(0, main_panel.items.main_holder.AbsolutePosition.X + main_panel.items.main_holder.AbsoluteSize.X + 10,
+                     0, main_panel.items.main_holder.AbsolutePosition.Y)
+        end
+        if config_panel.items.sgui.Enabled then
+            config_panel.items.main_holder.Position =
+                dim2(0,
+                     main_panel.items.main_holder.AbsolutePosition.X + main_panel.items.main_holder.AbsoluteSize.X + style_panel.items.main_holder.Size.X.Offset + 20,
+                     0, main_panel.items.main_holder.AbsolutePosition.Y)
+        end
     end
-    items.main_holder:GetPropertyChangedSignal("Position"):Connect(updateDockedPanels)
-    items.main_holder:GetPropertyChangedSignal("Size"):Connect(updateDockedPanels)
 
-    -- Ensure Insert key toggles all windows
+    -- Listen to main window drag
+    main_panel.items.main_holder:GetPropertyChangedSignal("Position"):Connect(updateDockedPanels)
+    main_panel.items.main_holder:GetPropertyChangedSignal("Size"):Connect(updateDockedPanels)
+
+    -- When style/config panel is restored, immediately dock them next to main
+    style_panel.items.sgui:GetPropertyChangedSignal("Enabled"):Connect(updateDockedPanels)
+    config_panel.items.sgui:GetPropertyChangedSignal("Enabled"):Connect(updateDockedPanels)
+
+    -- Keybind toggles all windows
     function window.set_menu_visibility(bool)
         window.opened = bool
         if bool then
@@ -1553,10 +1482,7 @@ function library:window(properties)
     return setmetatable(window, library)
 end
 
--- [ ... rest of your library code remains unchanged ... ]
-
--- [rest of the file unchanged]
-
+-- [ ... rest of your library code unchanged ... ]
 		function library:watermark(options) 
 			local cfg = {
 				default = options.text or options.default or os.date('drain.lol | %b %d %Y | %H:%M')
