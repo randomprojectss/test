@@ -1227,35 +1227,13 @@
 		-- Your script with ESP Preview and Playerlist window removed,
 -- and "Style" and "Configuration" panels docked to the main window.
 
--- [snip: All previous code up to library:window(properties) is unchanged]
-
--- [ ...snip... previous code unchanged ... ]
-
--- [ ... all your variables, themes, and helper functions remain unchanged ... ]
-
--- [ ... variables, helpers, and theme definitions unchanged ... ]
-
--- [ ... your variables, helpers, and theme definitions unchanged ... ]
-
--- Assuming library, lighting, camera, themes, flags, etc. are already defined
-
--- [ ... your variables, helpers, themes, and utility functions ... ]
-
--- ...[your variables, helpers, and theme setup]...
-
--- [ ... your variables, helpers, and theme definitions unchanged ... ]
-
--- [ ... your variables, helpers, and theme definitions ... ]
-
--- [ ... your variables, helpers, and theme definitions unchanged ... ]
-
 function library:window(properties)
     local window = {opened = true}
     local opened = {}
     local dock_outline
     local blur = library:create("BlurEffect", {
-        Parent = lighting,
-        Enabled = true,
+        Parent = lighting;
+        Enabled = true;
         Size = 15
     })
 
@@ -1265,7 +1243,7 @@ function library:window(properties)
         Name = ""
     })
 
-    -- Main panel
+    -- MAIN WINDOW
     local main_panel = library:panel({
         name = properties and properties.name or "Atlanta | ",
         size = dim2(0, 604, 0, 628),
@@ -1273,7 +1251,7 @@ function library:window(properties)
         image = "rbxassetid://98823308062942",
     })
 
-    -- Style panel
+    -- STYLE PANEL (DOCKED)
     local style_panel = library:panel({
         name = "Style",
         anchor_point = vec2(0, 0),
@@ -1282,7 +1260,7 @@ function library:window(properties)
         image = "rbxassetid://115194686863276",
     })
 
-    -- Config panel
+    -- CONFIG PANEL (DOCKED)
     local config_panel = library:panel({
         name = "Configurations",
         size = dim2(0, 324, 0, 410),
@@ -1290,7 +1268,7 @@ function library:window(properties)
         image = "rbxassetid://105199726008012",
     })
 
-    -- Dock logic: move style/config when main is dragged
+    -- VISUAL DOCKING
     local function updateDockedPanels()
         if style_panel.items.sgui.Enabled then
             style_panel.items.main_holder.Position =
@@ -1309,7 +1287,7 @@ function library:window(properties)
     style_panel.items.sgui:GetPropertyChangedSignal("Enabled"):Connect(updateDockedPanels)
     config_panel.items.sgui:GetPropertyChangedSignal("Enabled"):Connect(updateDockedPanels)
 
-    -- Insert-key toggle logic
+    -- Insert-key toggle logic (make sure all windows toggle)
     function window.set_menu_visibility(bool)
         window.opened = bool
         if bool then
@@ -1339,33 +1317,140 @@ function library:window(properties)
         end
     end
 
-    -- MAIN PANEL CONTENT (Tabs+Sections+Controls)
-    local main_tab = main_panel:tab({name = "Aimbot"})
-    local main_section = main_tab:section({name = "General"})
-    main_section:toggle({name = "Enable Aimbot", flag = "aimbot_enabled"})
-    main_section:slider({name = "FOV", flag = "aimbot_fov", min = 1, max = 360, default = 90})
-    main_tab:open_tab() -- <--- This is CRITICAL
+    -- MAIN PANEL CONTENT (FILL IN YOUR TABS/SECTIONS AS DESIRED!)
+    local main_column = setmetatable(main_panel.items, library):column()
+    local tab1 = main_panel:tab({name = "Aimbot"})
+    local section1 = tab1:section({name = "General"})
+    section1:toggle({name = "Enable Aimbot", flag = "aimbot_enabled"})
+    section1:slider({name = "FOV", flag = "aimbot_fov", min = 1, max = 360, default = 90})
 
-    -- STYLE PANEL CONTENT (Tabs+Sections+Controls)
-    local style_tab = style_panel:tab({name = "Theme"})
-    local style_section = style_tab:section({name = "Theme"})
+    -- STYLE PANEL CONTENT (ORIGINAL, WORKING LOGIC)
+    local watermark = library:watermark({default = os.date('Atlanta |  - %b %d %Y - %H:%M:%S')})
+    task.spawn(function()
+        while task.wait(1) do
+            watermark.change_text(os.date('Atlanta - Beta - %b %d %Y - %H:%M:%S'))
+        end
+    end)
+    local items_style = style_panel.items
+    local style_column = setmetatable(items_style, library):column()
+    local style_section = style_column:section({name = "Theme"})
     style_section:label({name = "Accent"})
-    :colorpicker({name = "Accent", color = Color3.fromRGB(96,120,190), flag = "accent"})
-    style_section:slider({name = "Blur Size", flag = "Blur Size", min = 0, max = 56, default = 15, interval = 1})
-    style_tab:open_tab() -- <--- This is CRITICAL
+    :colorpicker({name = "Accent", color = themes.preset.accent, flag = "accent", callback = function(color, alpha)
+        library:update_theme("accent", color)
+    end, flag = "Accent"})
+    style_section:label({name = "Contrast"})
+    :colorpicker({name = "Low", color = themes.preset.low_contrast, flag = "low_contrast", callback = function(color)
+        if (flags["high_contrast"] and flags["low_contrast"]) then
+            library:update_theme("contrast", rgbseq{
+                rgbkey(0, flags["low_contrast"].Color),
+                rgbkey(1, flags["high_contrast"].Color)
+            })
+        end
+        library:update_theme("low_contrast", flags["low_contrast"].Color)
+    end})
+    :colorpicker({name = "High", color = themes.preset.high_contrast, flag = "high_contrast", callback = function(color)
+        library:update_theme("contrast", rgbseq{
+            rgbkey(0, flags["low_contrast"].Color),
+            rgbkey(1, flags["high_contrast"].Color)
+        })
+        library:update_theme("high_contrast", flags["high_contrast"].Color)
+    end})
+    style_section:label({name = "Inline"})
+    :colorpicker({name = "Inline", color = themes.preset.inline, callback = function(color, alpha)
+        library:update_theme("inline", color)
+    end, flag = "Inline"})
+    style_section:label({name = "Outline"})
+    :colorpicker({name = "Outline", color = themes.preset.outline, callback = function(color, alpha)
+        library:update_theme("outline", color)
+    end, flag = "Outline"})
+    style_section:label({name = "Text Color"})
+    :colorpicker({name = "Main", color = themes.preset.text, callback = function(color, alpha)
+        library:update_theme("text", color)
+    end, flag = "Main"})
+    :colorpicker({name = "Outline", color = themes.preset.text_outline, callback = function(color, alpha)
+        library:update_theme("text_outline", color)
+    end, flag = "Outline"})
+    style_section:label({name = "Glow"})
+    :colorpicker({name = "Glow", color = themes.preset.glow, callback = function(color, alpha)
+        library:update_theme("glow", color)
+    end, flag = "Glow"})
+    style_section:slider({name = "Blur Size", flag = "Blur Size", min = 0, max = 56, default = 15, interval = 1, callback = function(int)
+        if window.opened then blur.Size = int end
+    end})
+    local other_section = style_column:section({name = "Other"})
+    other_section:label({name = "UI Bind"})
+    :keybind({callback = window.set_menu_visibility, key = Enum.KeyCode.Insert})
+    other_section:toggle({name = "Keybind List", flag = "keybind_list", callback = function(bool)
+        library.keybind_list_frame.Visible = bool
+    end})
+    other_section:toggle({name = "Watermark", flag = "watermark", callback = function(bool)
+        watermark.set_visible(bool)
+    end})
+    other_section:button_holder({})
+    other_section:button({name = "Copy JobId", callback = function()
+        setclipboard(game.JobId)
+    end})
+    other_section:button_holder({})
+    other_section:button({name = "Copy GameID", callback = function()
+        setclipboard(game.GameId)
+    end})
+    other_section:button_holder({})
+    other_section:button({name = "Copy Join Script", callback = function()
+        setclipboard('game:GetService("TeleportService"):TeleportToPlaceInstance(' .. game.PlaceId .. ', "' .. game.JobId .. '", game.Players.LocalPlayer)')
+    end})
+    other_section:button_holder({})
+    other_section:button({name = "Rejoin", callback = function()
+        game:GetService("TeleportService"):TeleportToPlaceInstance(game.PlaceId, game.JobId, lp)
+    end})
+    other_section:button_holder({})
+    other_section:button({name = "Join New Server", callback = function()
+        local apiRequest = game:GetService("HttpService"):JSONDecode(game:HttpGetAsync("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"))
+        local data = apiRequest.data[random(1, #apiRequest.data)]
+        if data.playing <= flags["max_players"] then
+            game:GetService("TeleportService"):TeleportToPlaceInstance(game.PlaceId, data.id)
+        end
+    end})
+    other_section:slider({name = "Max Players", flag = "max_players", min = 0, max = 40, default = 15, interval = 1})
 
-    -- CONFIG PANEL CONTENT (Tabs+Sections+Controls)
-    local config_tab = config_panel:tab({name = "Options"})
-    local config_section = config_tab:section({name = "Configs"})
-    config_section:list({flag = "config_name_list"})
+    -- CONFIG PANEL CONTENT (WORKING LOGIC)
+    local config_items = config_panel.items
+    local config_column = setmetatable(config_items, library):column()
+    local config_section = config_column:section({name = "Options"})
+    config_holder = config_section:list({flag = "config_name_list"})
     config_section:textbox({flag = "config_name_text_box"})
     config_section:button_holder({})
-    config_section:button({name = "Create", callback = function() end})
-    config_section:button({name = "Delete", callback = function() end})
+    config_section:button({name = "Create", callback = function()
+        writefile(library.directory .. "/configs/" .. flags["config_name_text_box"] .. ".cfg", library:get_config())
+        library:config_list_update()
+    end})
+    config_section:button({name = "Delete", callback = function()
+        delfile(library.directory .. "/configs/" .. flags["config_name_list"] .. ".cfg")
+        library:config_list_update()
+    end})
     config_section:button_holder({})
-    config_section:button({name = "Load", callback = function() end})
-    config_section:button({name = "Save", callback = function() end})
-    config_tab:open_tab() -- <--- This is CRITICAL
+    config_section:button({name = "Load", callback = function()
+        library:load_config(readfile(library.directory .. "/configs/" .. flags["config_name_list"] .. ".cfg"))
+        library:notification({text = "Loaded Config: " .. flags["config_name_list"], time = 3})
+    end})
+    config_section:button({name = "Save", callback = function()
+        writefile(library.directory .. "/configs/" .. flags["config_name_list"] .. ".cfg", library:get_config())
+        library:config_list_update()
+        library:notification({text = "Saved Config: " .. flags["config_name_list"], time = 3})
+    end})
+    config_section:button_holder({})
+    config_section:button({name = "Refresh Configs", callback = function()
+        library:config_list_update()
+    end})
+    config_section:button_holder({})
+    config_section:button({name = "Unload Config", callback = function()
+        library:load_config(library.old_config)
+    end})
+    config_section:button({name = "Unload Menu", callback = function()
+        library:load_config(library.old_config)
+        for _, gui in library.guis do gui:Destroy() end
+        for _, connection in library.connections do connection:Disconnect() end
+        blur:Destroy()
+    end})
 
     return setmetatable(window, library)
 end
