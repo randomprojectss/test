@@ -1,4 +1,4 @@
-
+-- dtgs
 
 -- variables
 	local uis = cloneref(game:GetService("UserInputService"))
@@ -1228,31 +1228,28 @@
 -- [ ...snip... previous code unchanged ... ]
 
 function library:window(properties)
-    local window = {opened = true}            
+    local window = {opened = true}
     local opened = {}
-    local dock_outline;
-    local blur = library:create( "BlurEffect" , {
-        Parent = lighting;
-        Enabled = true;
+    local dock_outline
+    local blur = library:create("BlurEffect", {
+        Parent = lighting,
+        Enabled = true,
         Size = 15
-    });    
+    })
 
     library.cache = library:create("ScreenGui", {
         Enabled = false,
         Parent = gethui(),
-        Name = "" 
+        Name = ""
     })
 
-    -- ... (unchanged code for window.set_menu_visibility and dock UI) ...
-
-    -- main window
+    -- MAIN WINDOW (dock logic, etc)
     local main_window = library:panel({
-        name = properties and properties.name or "Atlanta | ", 
+        name = properties and properties.name or "Atlanta | ",
         size = dim2(0, 604, 0, 628),
         position = dim2(0, (camera.ViewportSize.X / 2) - 302 - 96, 0, (camera.ViewportSize.Y / 2) - 421 - 12),
         image = "rbxassetid://98823308062942",
     })
-
     local items = main_window.items
 
     window["tab_holder"] = library:create("Frame", {
@@ -1265,7 +1262,6 @@ function library:window(properties)
         BorderSizePixel = 0,
         BackgroundColor3 = rgb(255, 255, 255)
     })
-
     library:create("UIListLayout", {
         Parent = window["tab_holder"],
         FillDirection = Enum.FillDirection.Horizontal,
@@ -1295,8 +1291,7 @@ function library:window(properties)
         BorderSizePixel = 0,
         BackgroundColor3 = themes.preset.outline
     })
-    
-    library:apply_theme(outline, "outline", "BackgroundColor3") 
+    library:apply_theme(outline, "outline", "BackgroundColor3")
 
     local inline = library:create("Frame", {
         Parent = outline,
@@ -1307,8 +1302,7 @@ function library:window(properties)
         BorderSizePixel = 0,
         BackgroundColor3 = themes.preset.inline
     })
-    
-    library:apply_theme(inline, "inline", "BackgroundColor3") 
+    library:apply_theme(inline, "inline", "BackgroundColor3")
 
     local background = library:create("Frame", {
         Parent = inline,
@@ -1338,109 +1332,248 @@ function library:window(properties)
             rgbkey(1, rgb(35, 35, 47))
         }
     })
-    
-    library:apply_theme(UIGradient, "contrast", "Color") 
-    library:make_resizable(items.main_holder) 
+    library:apply_theme(UIGradient, "contrast", "Color")
+    library:make_resizable(items.main_holder)
 
-    -- Style panel (ScreenGui, floating, docked by position)
-    local style_sgui = library:create("ScreenGui", {
-        Enabled = true,
-        Parent = gethui(),
-        Name = "StyleDocked"
-    })
-    local style = library:panel({
-        name = "Style", 
-        anchor_point = vec2(0, 0),
-        size = dim2(0, 394, 0, 464),
-        position = dim2(0, items.main_holder.AbsolutePosition.X + items.main_holder.AbsoluteSize.X + 2, 0, items.main_holder.AbsolutePosition.Y),
-        image = "rbxassetid://115194686863276",
-    })
-    style.items.main_holder.Parent = style_sgui
+    --== MAIN TABS ==--
 
-    -- Config panel (ScreenGui, floating, docked by position)
-    local config_sgui = library:create("ScreenGui", {
-        Enabled = true,
-        Parent = gethui(),
-        Name = "ConfigDocked"
-    })
-    local holder = library:panel({
-        name = "Configurations", 
-        size = dim2(0, 324, 0, 410),
-        position = dim2(0, items.main_holder.AbsolutePosition.X + items.main_holder.AbsoluteSize.X + 2, 0, items.main_holder.AbsolutePosition.Y + style.items.main_holder.AbsoluteSize.Y + 10),
-        image = "rbxassetid://105199726008012",
-    }) 
-    holder.items.main_holder.Parent = config_sgui
+    -- 1. Aimbot tab (example)
+    local main_tab = main_window:tab({name = "Aimbot"})
+    local main_section = main_tab:section({name = "General"})
+    main_section:toggle({name = "Enable Aimbot", flag = "aimbot_enabled"})
+    main_section:slider({name = "FOV", flag = "aimbot_fov", min = 1, max = 360, default = 90})
 
-    -- Keep style/config docked to main window by updating their positions
-    local function updateDockedPanels()
-        style.items.main_holder.Position = dim2(0, items.main_holder.AbsolutePosition.X + items.main_holder.AbsoluteSize.X + 10, 0, items.main_holder.AbsolutePosition.Y)
-        holder.items.main_holder.Position = dim2(0, items.main_holder.AbsolutePosition.X + items.main_holder.AbsoluteSize.X + style.items.main_holder.Size.X.Offset + 20, 0, items.main_holder.AbsolutePosition.Y)
+    -- 2. Visuals tab (example)
+    local visual_tab = main_window:tab({name = "Visuals"})
+    local visual_section = visual_tab:section({name = "ESP"})
+    visual_section:toggle({name = "Box ESP", flag = "box_esp"})
+    visual_section:colorpicker({name = "Box Color", flag = "box_color", color = Color3.fromRGB(0,255,0)})
+
+    -- 3. Settings tab with subtabs Style and Config
+    local settings_tab = main_window:tab({name = "Settings"})
+
+    -- Create Style and Config subtabs inside Settings
+    local style_subtab, config_subtab = settings_tab:multi_section({names = {"Style", "Config"}})
+
+    -- === Style Subtab content ===
+    do
+        local section = style_subtab:section({name = "Theme"})
+
+        section:label({name = "Accent"})
+        :colorpicker({
+            name = "Accent",
+            color = themes.preset.accent,
+            flag = "accent",
+            callback = function(color, alpha)
+                library:update_theme("accent", color)
+            end
+        })
+
+        section:label({name = "Contrast"})
+        :colorpicker({
+            name = "Low",
+            color = themes.preset.low_contrast,
+            flag = "low_contrast",
+            callback = function(color)
+                if (flags["high_contrast"] and flags["low_contrast"]) then
+                    library:update_theme("contrast", rgbseq{
+                        rgbkey(0, flags["low_contrast"].Color),
+                        rgbkey(1, flags["high_contrast"].Color)
+                    })
+                end
+                library:update_theme("low_contrast", flags["low_contrast"].Color)
+            end
+        })
+        :colorpicker({
+            name = "High",
+            color = themes.preset.high_contrast,
+            flag = "high_contrast",
+            callback = function(color)
+                library:update_theme("contrast", rgbseq{
+                    rgbkey(0, flags["low_contrast"].Color),
+                    rgbkey(1, flags["high_contrast"].Color)
+                })
+                library:update_theme("high_contrast", flags["high_contrast"].Color)
+            end
+        })
+
+        section:label({name = "Inline"})
+        :colorpicker({
+            name = "Inline",
+            color = themes.preset.inline,
+            callback = function(color, alpha)
+                library:update_theme("inline", color)
+            end
+        })
+
+        section:label({name = "Outline"})
+        :colorpicker({
+            name = "Outline",
+            color = themes.preset.outline,
+            callback = function(color, alpha)
+                library:update_theme("outline", color)
+            end
+        })
+
+        section:label({name = "Text Color"})
+        :colorpicker({
+            name = "Main",
+            color = themes.preset.text,
+            callback = function(color, alpha)
+                library:update_theme("text", color)
+            end
+        })
+        :colorpicker({
+            name = "Outline",
+            color = themes.preset.text_outline,
+            callback = function(color, alpha)
+                library:update_theme("text_outline", color)
+            end
+        })
+
+        section:label({name = "Glow"})
+        :colorpicker({
+            name = "Glow",
+            color = themes.preset.glow,
+            callback = function(color, alpha)
+                library:update_theme("glow", color)
+            end
+        })
+
+        section:slider({
+            name = "Blur Size",
+            flag = "Blur Size",
+            min = 0,
+            max = 56,
+            default = 15,
+            interval = 1,
+            callback = function(int)
+                if window.opened then blur.Size = int end
+            end
+        })
+
+        local section2 = style_subtab:section({name = "Other"})
+        section2:label({name = "UI Bind"})
+        :keybind({
+            callback = window.set_menu_visibility,
+            key = Enum.KeyCode.Insert
+        })
+
+        section2:toggle({
+            name = "Keybind List",
+            flag = "keybind_list",
+            callback = function(bool)
+                library.keybind_list_frame.Visible = bool
+            end
+        })
+
+        section2:toggle({
+            name = "Watermark",
+            flag = "watermark",
+            callback = function(bool)
+                watermark.set_visible(bool)
+            end
+        })
+
+        section2:button_holder({})
+        section2:button({
+            name = "Copy JobId",
+            callback = function() setclipboard(game.JobId) end
+        })
+        section2:button_holder({})
+        section2:button({
+            name = "Copy GameID",
+            callback = function() setclipboard(game.GameId) end
+        })
+        section2:button_holder({})
+        section2:button({
+            name = "Copy Join Script",
+            callback = function()
+                setclipboard('game:GetService("TeleportService"):TeleportToPlaceInstance('..game.PlaceId..', "'..game.JobId..'", game.Players.LocalPlayer)')
+            end
+        })
+        section2:button_holder({})
+        section2:button({
+            name = "Rejoin",
+            callback = function()
+                game:GetService("TeleportService"):TeleportToPlaceInstance(game.PlaceId, game.JobId, lp)
+            end
+        })
+        section2:button_holder({})
+        section2:button({
+            name = "Join New Server",
+            callback = function()
+                -- Your join new server logic here (example below)
+                local apiRequest = game:GetService("HttpService"):JSONDecode(game:HttpGetAsync("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"))
+                -- more code here ...
+            end
+        })
     end
-    items.main_holder:GetPropertyChangedSignal("Position"):Connect(updateDockedPanels)
-    items.main_holder:GetPropertyChangedSignal("Size"):Connect(updateDockedPanels)
 
-    -- Ensure Insert key toggles all windows
+    -- === Config Subtab content ===
+    do
+        local items_holder = config_subtab.items
+        getgenv().load_config = function(name)
+            library:load_config(readfile(library.directory .. "/configs/" .. name .. ".cfg"))
+        end
+
+        local column = setmetatable(items_holder, library):column()
+        -- Example config buttons and UI, adjust as you want:
+        column:button({name = "Load Config", callback = function()
+            -- open file dialog or load a default config
+        end})
+        column:button({name = "Save Config", callback = function()
+            -- save current config
+        end})
+        column:button({name = "Delete Config", callback = function()
+            -- delete config
+        end})
+        -- Add your full config management controls here as you had before
+    end
+
+    -- Watermark logic
+    local watermark = library:watermark({default = os.date('Atlanta |  - %b %d %Y - %H:%M:%S')})
+    task.spawn(function()
+        while task.wait(1) do
+            watermark.change_text(os.date('Atlanta - Beta - %b %d %Y - %H:%M:%S'))
+        end
+    end)
+
+    -- Toggle menu visibility (Insert key)
     function window.set_menu_visibility(bool)
-        window.opened = bool 
-        if bool then 
-            for _,gui in opened do 
-                gui.Enabled = true 
-            end 
+        window.opened = bool
+        if bool then
+            for _, gui in opened do
+                gui.Enabled = true
+            end
             opened = {}
         else
-            for _,gui in library.guis do 
-                if gui.Enabled then 
+            for _, gui in library.guis do
+                if gui.Enabled then
                     gui.Enabled = false
                     table.insert(opened, gui)
                 end
             end
         end
-        style_sgui.Enabled = bool
-        config_sgui.Enabled = bool
         library:tween(blur, {Size = bool and (flags["Blur Size"] or 15) or 0})
-        dock_outline.Visible = bool;
+        dock_outline.Visible = bool
         sgui.Enabled = true
         notif_holder.Enabled = true
         tooltip_sgui.Enabled = true
         library.cache.Enabled = false
-        for _,tooltip in tooltip_sgui:GetChildren() do 
-            tooltip.Visible = false;
-        end 
-        if library.current_element_open then 
+        for _, tooltip in tooltip_sgui:GetChildren() do
+            tooltip.Visible = false
+        end
+        if library.current_element_open then
             library.current_element_open.set_visible(false)
-            library.current_element_open.open = false 
-            library.current_element_open = nil 
+            library.current_element_open.open = false
+            library.current_element_open = nil
         end
     end
-
-    -- ... rest of the function is unchanged except for NO esp/playerlist panel creation! ...
-
-    -- Style content (as before)
-    local watermark = library:watermark({default = os.date('Atlanta |  - %b %d %Y - %H:%M:%S')})  
-    task.spawn(function()
-        while task.wait(1) do 
-            watermark.change_text(os.date('Atlanta - Beta - %b %d %Y - %H:%M:%S'))
-        end 
-    end) 
-    local items_style = style.items
-    local column = setmetatable(items_style, library):column()
-    -- ... rest of style/config code as before ...
-
-    local items_holder = holder.items
-    getgenv().load_config = function(name)
-        library:load_config(readfile(library.directory .. "/configs/" .. name .. ".cfg"))
-    end 
-    local column = setmetatable(items_holder, library):column()
-    -- ... rest of config section as before ...
-
-    -- NO ESP preview, NO Playerlist window
 
     return setmetatable(window, library)
 end
 
--- [rest of the file unchanged]
-
--- [ ... rest of your library code unchanged ... ]
 		function library:watermark(options) 
 			local cfg = {
 				default = options.text or options.default or os.date('drain.lol | %b %d %Y | %H:%M')
