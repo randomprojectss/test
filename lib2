@@ -1247,6 +1247,8 @@
 
 -- [ ... your variables, helpers, and theme definitions ... ]
 
+-- [ ... your variables, helpers, and theme definitions unchanged ... ]
+
 function library:window(properties)
     local window = {opened = true}
     local opened = {}
@@ -1369,7 +1371,6 @@ function library:window(properties)
 end
 
 -- [ ... rest of your library code unchanged ... ]
-
 		function library:watermark(options) 
 			local cfg = {
 				default = options.text or options.default or os.date('drain.lol | %b %d %Y | %H:%M')
